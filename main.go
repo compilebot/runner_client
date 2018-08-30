@@ -15,7 +15,7 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func runner_client(n string) (res int, err error) {
+func runner_client(n string) (res string, err error) {
 
 	MQ_HOST := os.Getenv("MQ_HOST")
 
@@ -65,6 +65,7 @@ func runner_client(n string) (res int, err error) {
 
 	for d := range msgs {
 		if corrId == d.CorrelationId {
+			res = string(d.Body)
 			break
 		}
 	}
@@ -87,7 +88,7 @@ func main() {
 	res, err := runner_client(n)
 	failOnError(err, "Failed to handle RPC request")
 
-	log.Printf(" [.] Got %d", res)
+	log.Printf(" [.] Got %s", res)
 }
 
 func bodyFrom(args []string) string {
