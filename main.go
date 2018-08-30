@@ -73,7 +73,15 @@ func runner_client(n string) (res int, err error) {
 }
 
 func main() {
-	n := bodyFrom(os.Args)
+	n := `
+	package main
+
+	import "fmt"
+
+	func main() {
+		fmt.Println("hello world")
+	}
+	`
 
 	log.Printf(" [x] Requesting output for %s", n)
 	res, err := runner_client(n)
