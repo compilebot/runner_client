@@ -104,7 +104,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func validCommand(cmd string) (matched bool, err error) {
-	matched, err = regexp.Match("^\\+compilebot .[a-z]* \x60{3}.*\x60{3}$", []byte(cmd))
+	matched, err = regexp.MatchString(`(?ms)^\+compilebot .[a-z]* \x60{3}.*\x60{3}$`, cmd)
+	fmt.Println(matched)
 	return
 }
 
