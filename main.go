@@ -67,7 +67,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if !valid {
-		s.ChannelMessageSend(m.ChannelID, "Invalid syntax. +compilebot <language> ```<code>```")
+		s.ChannelMessageSend(m.ChannelID, "Invalid syntax. +compilebot <language> \\`\\`\\`<code>\\`\\`\\`")
 		return
 	}
 
