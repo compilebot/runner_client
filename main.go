@@ -86,7 +86,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelMessageSend(m.ChannelID, "Working..")
 
-	code = strings.Trim(code, "``")
+	code = strings.Trim(code, "`")
 	res, err := runnerClient(code)
 
 	if err != nil {

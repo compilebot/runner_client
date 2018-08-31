@@ -51,4 +51,34 @@ func Test(t *testing.T) {
 		})
 	})
 
+	g.Describe("validCommand", func() {
+		g.It("Should return true if the command is valid", func() {
+			c, err := validCommand("+compilebot go ```package main```")
+			g.Assert(c).Equal(true)
+			g.Assert(err).Equal(nil)
+
+			c, err = validCommand("+compilebot python ```package main```")
+			g.Assert(c).Equal(true)
+			g.Assert(err).Equal(nil)
+
+			c, err = validCommand("+compilebot javascript ```package main```")
+			g.Assert(c).Equal(true)
+			g.Assert(err).Equal(nil)
+		})
+
+		g.It("Should return false if the command is invalid", func() {
+			c, err := validCommand("+copilebot go ```package main```")
+			g.Assert(c).Equal(false)
+			g.Assert(err).Equal(nil)
+
+			c, err = validCommand("+compilebot python ``package main`")
+			g.Assert(c).Equal(false)
+			g.Assert(err).Equal(nil)
+
+			c, err = validCommand("+compilebot ```package main```")
+			g.Assert(c).Equal(false)
+			g.Assert(err).Equal(nil)
+		})
+	})
+
 }
