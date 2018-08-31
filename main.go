@@ -1,108 +1,91 @@
 package main
 
 import (
-	"log"
-	"math/rand"
+	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
-	"github.com/streadway/amqp"
+	"github.com/bwmarrin/discordgo"
 )
 
-func runnerClient(n string) (res string, err error) {
+// Variables used for command line parameters
+var (
+	Token string
+)
 
-	mqHost := os.Getenv("MQ_HOST")
-
-	conn, err := amqp.Dial(mqHost)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		"",
-		false,
-		false,
-		true,
-		false,
-		nil,
-	)
-	failOnError(err, "Failed to declare a queue")
-
-	msgs, err := ch.Consume(
-		q.Name,
-		"",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	failOnError(err, "Failed to register a consumer")
-
-	corrID := randomString(32)
-
-	err = ch.Publish(
-		"",          // exchange
-		"rpc_queue", // routing key
-		false,       // mandatory
-		false,       // immediate
-		amqp.Publishing{
-			ContentType:   "text/plain",
-			CorrelationId: corrID,
-			ReplyTo:       q.Name,
-			Body:          []byte(n),
-		})
-	failOnError(err, "Failed to publish a message")
-
-	for d := range msgs {
-		if corrID == d.CorrelationId {
-			res = string(d.Body)
-			break
-		}
-	}
-
-	return
+func init() {
+	Token = os.Getenv("DISCORD_TOKEN")
 }
 
 func main() {
-	n := `
-	package main
 
-	import "fmt"
-
-	func main() {
-		fmt.Println("hello world")
-	}
-	`
-
-	log.Printf(" [x] Requesting output for %s", n)
-	res, err := runnerClient(n)
-	failOnError(err, "Failed to handle RPC request")
-
-	log.Printf(" [.] Got %s", res)
-}
-
-func bodyFrom(args []string) string {
-	return strings.Join(args[1:], " ")
-}
-
-func randomString(l int) string {
-	bytes := make([]byte, l)
-	for i := 0; i < l; i++ {
-		bytes[i] = byte(randInt(65, 90))
-	}
-	return string(bytes)
-}
-
-func randInt(min int, max int) int {
-	return min + rand.Intn(max-min)
-}
-
-func failOnError(err error, msg string) {
+	// Create a new Discord session using the provided bot token.
+	dg, err := discordgo.New("Bot " + Token)
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		fmt.Println("error creating Discord session,", err)
+		return
 	}
+
+	// Register the messageCreate func as a callback for MessageCreate events.
+	dg.AddHandler(messageCreate)
+
+	// Open a websocket connection to Discord and begin listening.
+	err = dg.Open()
+	if err != nil {
+		fmt.Println("error opening connection,", err)
+		return
+	}
+
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	// Cleanly close down the Discord session.
+	dg.Close()
+}
+
+// This function will be called (due to AddHandler above) every time a new
+// message is created on any channel that the autenticated bot has access to.
+func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	langs := map[string]bool{"go": true}
+
+	// Ignore all messages created by the bot itself
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	if strings.Contains(m.Content, "+compilebot") {
+		a := strings.Split(m.Content, " ")
+		lang := a[1]
+
+		if _, ok := langs[lang]; !ok {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s not supported.", lang))
+			return
+		}
+
+		s.ChannelMessageSend(m.ChannelID, "Working..")
+
+		code := strings.Split(m.Content, a[0]+" "+a[1])
+
+		fmt.Println(code)
+
+		f := strings.Replace(code[1], "`", "", 3)
+		res, err := runnerClient(f)
+
+		fmt.Println(f)
+
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Error: "+err.Error())
+			fmt.Println(f)
+			return
+		}
+
+		s.ChannelMessageSend(m.ChannelID, res)
+
+	}
+
 }
