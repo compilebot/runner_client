@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 
@@ -58,9 +59,20 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	valid, err := validCommand(m.Content)
+
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("An error occured: %x", err))
+		return
+	}
+
+	if !valid {
+		s.ChannelMessageSend(m.ChannelID, "Invalid syntax. +compilebot <language> ```<code>```")
+		return
+	}
+
 	if strings.Contains(m.Content, "+compilebot") {
-		a := strings.Split(m.Content, " ")
-		lang := a[1]
+		lang := strings.Split(m.Content, " ")[1]
 
 		if _, ok := langs[lang]; !ok {
 			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s not supported.", lang))
@@ -69,18 +81,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		s.ChannelMessageSend(m.ChannelID, "Working..")
 
-		code := strings.Split(m.Content, a[0]+" "+a[1])
+		code, err := getCode(m.Content)
+
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("An error occured: %v", err))
+		}
 
 		fmt.Println(code)
 
-		f := strings.Replace(code[1], "`", "", -1)
-		res, err := runnerClient(f)
-
-		fmt.Println(f)
+		res, err := runnerClient(code)
 
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Error: "+err.Error())
-			fmt.Println(f)
+			fmt.Println(code)
 			return
 		}
 
@@ -88,4 +101,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	}
 
+}
+
+func validCommand(cmd string) (matched bool, err error) {
+	matched, err = regexp.Match("^\\+compilebot .[a-z]* \x60{3}.*\x60{3}$", []byte(cmd))
+	return
+}
+
+func getCode(cmd string) (code string, err error) {
+	r, err := regexp.Compile("\x60{3}.*\x60{3}$")
+	if err != nil {
+		return
+	}
+	code = string(r.Find([]byte(cmd)))
+	return
 }
