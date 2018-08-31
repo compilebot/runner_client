@@ -86,6 +86,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelMessageSend(m.ChannelID, "Working..")
 
+	fmt.Println(code)
 	res, err := runnerClient(code)
 
 	if err != nil {
@@ -103,7 +104,7 @@ func validCommand(cmd string) (matched bool, err error) {
 }
 
 func getCode(cmd string) (code string, err error) {
-	r, err := regexp.Compile("\x60{3}.*\x60{3}$")
+	r, err := regexp.Compile(`(?ms)\x60{3}.*\x60{3}$`)
 	if err != nil {
 		return
 	}
