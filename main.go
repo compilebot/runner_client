@@ -73,7 +73,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		fmt.Println(code)
 
-		f := strings.Replace(code[1], "`", "", 3)
+		f := strings.Replace(code[1], "`", "", -1)
 		res, err := runnerClient(f)
 
 		fmt.Println(f)
