@@ -13,8 +13,6 @@ func runnerClient(n string) (res string, err error) {
 
 	log.Printf(" [x] Requesting output for %s", n)
 
-	log.Printf(" [.] Got %s", res)
-
 	mqHost := os.Getenv("MQ_HOST")
 
 	conn, err := amqp.Dial(mqHost)
@@ -68,6 +66,7 @@ func runnerClient(n string) (res string, err error) {
 		}
 	}
 
+	log.Printf(" [.] Got %s", res)
 	return
 }
 

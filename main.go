@@ -71,41 +71,34 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if strings.Contains(m.Content, "+compilebot") {
-		lang := strings.Split(m.Content, " ")[1]
+	lang := strings.Split(m.Content, " ")[1]
 
-		if _, ok := langs[lang]; !ok {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s not supported.", lang))
-			return
-		}
-
-		s.ChannelMessageSend(m.ChannelID, "Working..")
-
-		code, err := getCode(m.Content)
-
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("An error occured: %v", err))
-		}
-
-		fmt.Println(code)
-
-		res, err := runnerClient(code)
-
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Error: "+err.Error())
-			fmt.Println(code)
-			return
-		}
-
-		s.ChannelMessageSend(m.ChannelID, res)
-
+	if _, ok := langs[lang]; !ok {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s not supported.", lang))
+		return
 	}
+
+	code, err := getCode(m.Content)
+
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("An error occured: %v", err))
+	}
+
+	s.ChannelMessageSend(m.ChannelID, "Working..")
+
+	res, err := runnerClient(code)
+
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Error: "+err.Error())
+		return
+	}
+
+	s.ChannelMessageSend(m.ChannelID, res)
 
 }
 
 func validCommand(cmd string) (matched bool, err error) {
 	matched, err = regexp.MatchString(`(?ms)^\+compilebot .[a-z]* \x60{3}.*\x60{3}$`, cmd)
-	fmt.Println(matched)
 	return
 }
 
