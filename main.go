@@ -59,6 +59,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if !strings.Contains(m.Content, "+compilebot") {
+		return
+	}
+
 	valid, err := validCommand(m.Content)
 
 	if err != nil {
